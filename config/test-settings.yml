@@ -1,0 +1,2 @@
+database:
+  database: yesod-mongo-thrift_test
