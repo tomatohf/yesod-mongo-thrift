@@ -21,3 +21,6 @@ cabal.sandbox.config
 *.chs.h
 .virtualenv
 cabal.config
+
+.idea
+*.iml
