@@ -19,7 +19,7 @@ spec = withApp $ do
                 setUrl CommentR
                 setRequestBody encoded
                 addRequestHeader ("Content-Type", "application/json")
-                addTokenFromCookie
+                --addTokenFromCookie
             
             statusIs 200
 
@@ -36,6 +36,6 @@ spec = withApp $ do
                 setUrl CommentR
                 setRequestBody $ encode body
                 addRequestHeader ("Content-Type", "application/json")
-                addTokenFromCookie
+                --addTokenFromCookie
             statusIs 400
 
