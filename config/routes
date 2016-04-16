@@ -5,4 +5,4 @@
 
 / HomeR GET
 
-/comments CommentR POST
+/posts PostR POST
