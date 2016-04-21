@@ -5,4 +5,4 @@
 
 / HomeR GET
 
-/posts PostR POST
+/posts PostsR GET POST
