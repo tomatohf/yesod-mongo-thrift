@@ -22,16 +22,42 @@ getPostsR = do
 
 postPostsR :: Handler Value
 postPostsR = do
-    title <- lookupPostParam "title"
-    content <- lookupPostParam "content"
-    now <- liftIO getCurrentTime
-    let post = Post { postTitle = title ||= ""
-                    , postContent = content ||= ""
-                    , postCreated = now
-                    , postUpdated = now
-                    }
-    postId <- runDB $ insert post
-    return $ object ["saved" .= True, "data" .= postId]
+    result <- validate
+    case result of
+        Left e -> return e
+        Right (title, content) -> do
+            now <- liftIO getCurrentTime
+            let post = Post { postTitle = title
+                            , postContent = content
+                            , postCreated = now
+                            , postUpdated = now
+                            }
+            postId <- runDB $ insert post
+            return $ object [savedKey .= True, "data" .= postId]
+
+savedKey :: Text
+savedKey = "saved"
+
+type ValidateResult a = Handler (Either Value a)
+
+validate :: ValidateResult (Text, Text)
+validate = do
+    title <- validateField "title" 128
+    content <- validateField "content" 6
+    return $ case [title, content] of
+        [Right t, Right c] -> Right (t, c)
+        fields @ _ -> Left $ object [savedKey .= False, "errors" .= lefts fields]
+  where
+    errorJson :: Text -> Text -> Value
+    errorJson key reason = object ["field" .= key, "error" .= reason]
+    validateField :: Text -> Int -> ValidateResult Text
+    validateField key maxLength = do
+        value <- lookupPostParam key
+        return $ case value of
+            Just v -> if length v > maxLength
+                then Left $ errorJson key "超过长度限制"
+                else Right v
+            Nothing -> Left $ errorJson key "不能为空"
 
 (||=) :: Maybe a -> a -> a
 (||=) (Just a) _ = a
