@@ -1,7 +1,7 @@
 module Handler.Post where
 
 import Import
-import Text.Read
+import Text.Read (readMaybe)
 
 getPostsR :: Handler Value
 getPostsR = do
@@ -34,6 +34,13 @@ postPostsR = do
                             }
             postId <- runDB $ insert post
             return $ object [savedKey .= True, "data" .= postId]
+
+
+getPostR :: PostId -> Handler Value
+getPostR postId = do
+    post <- runDB $ get404 postId
+    returnJson post
+
 
 savedKey :: Text
 savedKey = "saved"
