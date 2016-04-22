@@ -41,6 +41,19 @@ getPostR postId = do
     post <- runDB $ get404 postId
     returnJson post
 
+postPostR :: PostId -> Handler Value
+postPostR postId = do
+    result <- validate
+    case result of
+        Left e -> return e
+        Right (title, content) -> do
+            now <- liftIO getCurrentTime
+            runDB $ update postId [ PostTitle =. title
+                                  , PostContent =. content
+                                  , PostUpdated =. now
+                                  ]
+            return $ object [savedKey .= True]
+
 
 savedKey :: Text
 savedKey = "saved"
