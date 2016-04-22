@@ -43,21 +43,21 @@ type ValidateResult a = Handler (Either Value a)
 validate :: ValidateResult (Text, Text)
 validate = do
     title <- validateField "title" 128
-    content <- validateField "content" 6
+    content <- validateField "content" 65536
     return $ case [title, content] of
         [Right t, Right c] -> Right (t, c)
         fields @ _ -> Left $ object [savedKey .= False, "errors" .= lefts fields]
   where
     errorJson :: Text -> Text -> Value
-    errorJson key reason = object ["field" .= key, "error" .= reason]
+    errorJson key reason = object ["field" .= key, "reason" .= reason]
     validateField :: Text -> Int -> ValidateResult Text
     validateField key maxLength = do
         value <- lookupPostParam key
         return $ case value of
-            Just v -> if length v > maxLength
+            Just v | not $ null v -> if length v > maxLength
                 then Left $ errorJson key "超过长度限制"
                 else Right v
-            Nothing -> Left $ errorJson key "不能为空"
+            _ -> Left $ errorJson key "不能为空"
 
 (||=) :: Maybe a -> a -> a
 (||=) (Just a) _ = a
