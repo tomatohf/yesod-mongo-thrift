@@ -1,7 +1,15 @@
 module Handler.Post where
 
 import Import
+
+import Thrift.Protocol.Binary
+import Thrift.Transport.Handle
+
+import qualified Dao_Client
+import Dao_Types
+
 import Text.Read (readMaybe)
+import Network
 
 getPostsR :: Handler Value
 getPostsR = do
@@ -78,6 +86,19 @@ validate = do
                 then Left $ errorJson key "超过长度限制"
                 else Right v
             _ -> Left $ errorJson key "不能为空"
+
+thriftHost :: HostName
+thriftHost = "10.1.1.223"
+thriftPort :: PortID
+thriftPort = PortNumber 8888
+
+authenticate :: IO ()
+authenticate = do
+    transport <- hOpen (thriftHost, thriftPort)
+    let binProto = BinaryProtocol transport
+        client = (binProto, binProto)
+    access <- Dao_Client.getAccountAccess client "uid"
+    print $ accessResult_data access
 
 (||=) :: Maybe a -> a -> a
 (||=) (Just a) _ = a

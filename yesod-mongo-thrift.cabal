@@ -12,7 +12,7 @@ Flag library-only
     Default:       False
 
 library
-    hs-source-dirs: ., app
+    hs-source-dirs: ., app, thrift
     exposed-modules: Application
                      Foundation
                      Import
@@ -23,6 +23,11 @@ library
                      Handler.Common
                      Handler.Home
                      Handler.Post
+    other-modules: Dao
+                   Dao_Client
+                   Dao_Types
+                   Dao_Consts
+                   Dao_Iface
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -83,13 +88,17 @@ library
                  , time
                  , case-insensitive
                  , wai
+                 , thrift
+                 , hashable
+                 , QuickCheck
+                 , network
 
 executable         yesod-mongo-thrift
     if flag(library-only)
         Buildable: False
 
     main-is:           main.hs
-    hs-source-dirs:    app
+    hs-source-dirs:    app, thrift
     build-depends:     base, yesod-mongo-thrift
 
     ghc-options:       -threaded -rtsopts -with-rtsopts=-N
