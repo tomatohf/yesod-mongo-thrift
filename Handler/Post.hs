@@ -3,6 +3,7 @@ module Handler.Post where
 import Import
 
 import Thrift.Protocol.Binary
+import Thrift.Transport.Framed
 import Thrift.Transport.Handle
 
 import qualified Dao_Client
@@ -94,7 +95,8 @@ thriftPort = PortNumber 8888
 
 authenticate :: IO ()
 authenticate = do
-    transport <- hOpen (thriftHost, thriftPort)
+    h <- hOpen (thriftHost, thriftPort)
+    transport <- openFramedTransport h
     let binProto = BinaryProtocol transport
         client = (binProto, binProto)
     access <- Dao_Client.getAccountAccess client "uid"
