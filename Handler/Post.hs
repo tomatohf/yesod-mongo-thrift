@@ -11,6 +11,8 @@ import Dao_Types
 
 import Text.Read (readMaybe)
 import Network
+import Control.Monad.Trans.Maybe
+import qualified Data.Text.Lazy as Lazy
 
 getPostsR :: Handler Value
 getPostsR = do
@@ -71,6 +73,7 @@ type ValidateResult a = Handler (Either Value a)
 
 validate :: ValidateResult (Text, Text)
 validate = do
+    authenticate
     title <- validateField "title" 128
     content <- validateField "content" 65536
     return $ case [title, content] of
@@ -93,14 +96,39 @@ thriftHost = "10.1.1.223"
 thriftPort :: PortID
 thriftPort = PortNumber 8888
 
-authenticate :: IO ()
+sessionCookie :: Text
+sessionCookie = "sessionCookie"
+accountIdKey :: Lazy.Text
+accountIdKey = "accountIdKey"
+accessEnum :: Int32
+accessEnum = -1
+
+authenticate :: Handler ()
 authenticate = do
+    maybeSessionId <- lookupCookie sessionCookie
+    access <- (liftIO . runMaybeT . getAccess) maybeSessionId
+    case access of
+        Just enums | elem accessEnum enums -> return ()
+        _ -> permissionDenied "access denied"
+  where
+    getAccess :: Maybe Text -> MaybeT IO (Vector Int32)
+    getAccess maybeSessionId = do
+        sessionId <- liftMaybe maybeSessionId
+        connection <- lift getDaoConnection
+        sessionMap <- lift $ Dao_Client.getSession connection (fromStrict sessionId) (singleton accountIdKey)
+        accountId <- liftMaybe $ lookup accountIdKey sessionMap
+        MaybeT $ accessResult_data <$> Dao_Client.getAccountAccess connection accountId
+    liftMaybe :: Maybe a -> MaybeT IO a
+    liftMaybe = MaybeT . return
+
+type DaoProtocol = BinaryProtocol (FramedTransport Handle)
+
+getDaoConnection :: IO (DaoProtocol, DaoProtocol)
+getDaoConnection = do
     h <- hOpen (thriftHost, thriftPort)
     transport <- openFramedTransport h
-    let binProto = BinaryProtocol transport
-        client = (binProto, binProto)
-    access <- Dao_Client.getAccountAccess client "uid"
-    print $ accessResult_data access
+    let protocol = BinaryProtocol transport
+    return (protocol, protocol)
 
 (||=) :: Maybe a -> a -> a
 (||=) (Just a) _ = a
