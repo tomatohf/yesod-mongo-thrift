@@ -12,7 +12,6 @@ import Dao_Types
 import Text.Read (readMaybe)
 import Network
 import Control.Monad.Trans.Maybe
-import qualified Data.Text.Lazy as Lazy
 
 getPostsR :: Handler Value
 getPostsR = do
@@ -91,30 +90,20 @@ validate = do
                 else Right v
             _ -> Left $ errorJson key "不能为空"
 
-thriftHost :: HostName
-thriftHost = "10.1.1.223"
-thriftPort :: PortID
-thriftPort = PortNumber 8888
-
-sessionCookie :: Text
-sessionCookie = "sessionCookie"
-accountIdKey :: Lazy.Text
-accountIdKey = "accountIdKey"
-accessEnum :: Int32
-accessEnum = -1
-
 authenticate :: Handler ()
 authenticate = do
-    maybeSessionId <- lookupCookie sessionCookie
-    access <- (liftIO . runMaybeT . getAccess) maybeSessionId
+    App {appSettings = settings} <- getYesod
+    maybeSessionId <- lookupCookie $ appSessionCookie settings
+    access <- (liftIO . runMaybeT . getAccess settings) maybeSessionId
     case access of
-        Just enums | elem accessEnum enums -> return ()
+        Just enums | elem (appAccessEnum settings) enums -> return ()
         _ -> permissionDenied "access denied"
   where
-    getAccess :: Maybe Text -> MaybeT IO (Vector Int32)
-    getAccess maybeSessionId = do
+    getAccess :: AppSettings -> Maybe Text -> MaybeT IO (Vector Int32)
+    getAccess settings maybeSessionId = do
         sessionId <- liftMaybe maybeSessionId
-        connection <- lift getDaoConnection
+        connection <- lift $ getDaoConnection (appThriftHost settings) (appThriftPort settings)
+        let accountIdKey = fromStrict $ appAccountIdKey settings
         sessionMap <- lift $ Dao_Client.getSession connection (fromStrict sessionId) (singleton accountIdKey)
         accountId <- liftMaybe $ lookup accountIdKey sessionMap
         MaybeT $ accessResult_data <$> Dao_Client.getAccountAccess connection accountId
@@ -123,9 +112,9 @@ authenticate = do
 
 type DaoProtocol = BinaryProtocol (FramedTransport Handle)
 
-getDaoConnection :: IO (DaoProtocol, DaoProtocol)
-getDaoConnection = do
-    h <- hOpen (thriftHost, thriftPort)
+getDaoConnection :: String -> Int -> IO (DaoProtocol, DaoProtocol)
+getDaoConnection thriftHost thriftPort = do
+    h <- hOpen (thriftHost, PortNumber $ toEnum thriftPort)
     transport <- openFramedTransport h
     let protocol = BinaryProtocol transport
     return (protocol, protocol)

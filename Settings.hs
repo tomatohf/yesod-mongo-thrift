@@ -54,6 +54,13 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+
+    -- added by Tomato
+    , appThriftHost :: String
+    , appThriftPort :: Int
+    , appSessionCookie :: Text
+    , appAccountIdKey :: Text
+    , appAccessEnum :: Int32
     }
 
 instance FromJSON AppSettings where
@@ -79,6 +86,12 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+
+        appThriftHost              <- o .: "thrift-host"
+        appThriftPort              <- o .: "thrift-port"
+        appSessionCookie           <- o .: "session-cookie"
+        appAccountIdKey            <- o .: "account-id-key"
+        appAccessEnum              <- o .: "access-enum"
 
         return AppSettings {..}
 

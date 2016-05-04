@@ -33,3 +33,10 @@ database:
 
 copyright: 乔布堂 qiaobutang.com
 #analytics: UA-YOURCODE
+
+# added by Tomato
+thrift-host: "localhost"
+thrift-port: 9886
+session-cookie: "session-cookie"
+account-id-key: "account-id-key"
+access-enum: -1
