@@ -113,9 +113,13 @@ authenticate = do
 
 allowCrossOrigin :: Handler ()
 allowCrossOrigin = do
-    addHeader "Access-Control-Allow-Origin" "*"
-    addHeader "Access-Control-Allow-Credentials" "true"
-    addHeader "Access-Control-Allow-Headers" "Content-Type"
+    origin <- lookupHeader "Origin"
+    case origin of
+        Just o -> do
+            addHeader "Access-Control-Allow-Origin" $ decodeUtf8 o
+            addHeader "Access-Control-Allow-Credentials" "true"
+            addHeader "Access-Control-Allow-Headers" "Content-Type"
+        _ -> return ()
 
 type DaoProtocol = BinaryProtocol (FramedTransport Handle)
 
