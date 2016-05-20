@@ -72,6 +72,7 @@ type ValidateResult a = Handler (Either Value a)
 
 validate :: ValidateResult (Text, Text)
 validate = do
+    allowCrossOrigin
     authenticate
     title <- validateField "title" 128
     content <- validateField "content" 65536
@@ -109,6 +110,12 @@ authenticate = do
         MaybeT $ accessResult_data <$> Dao_Client.getAccountAccess connection accountId
     liftMaybe :: Maybe a -> MaybeT IO a
     liftMaybe = MaybeT . return
+
+allowCrossOrigin :: Handler ()
+allowCrossOrigin = do
+    addHeader "Access-Control-Allow-Origin" "*"
+    addHeader "Access-Control-Allow-Credentials" "true"
+    addHeader "Access-Control-Allow-Headers" "Content-Type"
 
 type DaoProtocol = BinaryProtocol (FramedTransport Handle)
 
